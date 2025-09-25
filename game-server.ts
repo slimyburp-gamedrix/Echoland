@@ -342,6 +342,11 @@ const app = new Elysia()
       console.log(`[HEARTBEAT] ${path}:`, JSON.stringify(body));
     }
   })
+  .onTransform(({ path, body }) => {
+    if (path.includes("inventory")) {
+      console.log(`[INVENTORY] ${path}:`, JSON.stringify(body));
+    }
+  })
 
 
   .post(
@@ -1290,7 +1295,7 @@ const app = new Elysia()
     const start = page * pageSize;
     const slice = items.slice(start, start + pageSize);
 
-    return new Response(JSON.stringify({ inventoryItems: slice }), {
+    return new Response(JSON.stringify(slice), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
@@ -1343,6 +1348,12 @@ const app = new Elysia()
 
     accountData.inventory = current;
     await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
+
+    // Also mirror to per-user inventory file for compatibility
+    const invDir = `./data/person/inventory`;
+    const invPath = `${invDir}/${personId}.json`;
+    await fs.mkdir(invDir, { recursive: true });
+    await fs.writeFile(invPath, JSON.stringify(current, null, 2));
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
