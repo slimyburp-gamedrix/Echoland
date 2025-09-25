@@ -393,27 +393,7 @@ const app = new Elysia()
   )
   // Save avatar body attachments to account.json
   .post("/person/updateattachment", async ({ body }) => {
-    const { attachments } = body as any;
-
-    // attachments expected as a JSON string
-    if (attachments === undefined) {
-      return new Response(JSON.stringify({ ok: false, error: "Missing attachments" }), {
-        status: 422,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    let parsed: unknown = attachments;
-    if (typeof attachments === "string") {
-      try {
-        parsed = JSON.parse(attachments);
-      } catch {
-        return new Response(JSON.stringify({ ok: false, error: "attachments must be JSON or JSON string" }), {
-          status: 422,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-    }
+    const { id, data, attachments } = body as any;
 
     const accountPath = "./data/person/account.json";
     let accountData: Record<string, any> = {};
@@ -426,7 +406,46 @@ const app = new Elysia()
       });
     }
 
-    accountData.attachments = parsed;
+    // Ensure attachments object exists in account
+    let currentAttachments: Record<string, any> = {};
+    if (typeof accountData.attachments === "string") {
+      try { currentAttachments = JSON.parse(accountData.attachments) ?? {}; } catch { currentAttachments = {}; }
+    } else if (accountData.attachments && typeof accountData.attachments === "object") {
+      currentAttachments = accountData.attachments as Record<string, any>;
+    }
+
+    if (attachments !== undefined) {
+      // Full replacement path
+      let parsed: unknown = attachments;
+      if (typeof attachments === "string") {
+        try { parsed = JSON.parse(attachments); } catch {
+          return new Response(JSON.stringify({ ok: false, error: "attachments must be JSON or JSON string" }), {
+            status: 422,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+      }
+      accountData.attachments = parsed;
+    } else if (id !== undefined && data !== undefined) {
+      // Incremental update path: single slot
+      let parsedData: any = data;
+      if (typeof data === "string") {
+        try { parsedData = JSON.parse(data); } catch {
+          return new Response(JSON.stringify({ ok: false, error: "data must be JSON string" }), {
+            status: 422,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+      }
+      currentAttachments[String(id)] = parsedData;
+      accountData.attachments = currentAttachments;
+    } else {
+      return new Response(JSON.stringify({ ok: false, error: "Missing attachments or (id,data)" }), {
+        status: 422,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
     await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -434,9 +453,12 @@ const app = new Elysia()
       headers: { "Content-Type": "application/json" }
     });
   }, {
-    body: t.Object({
-      attachments: t.Union([t.String(), t.Record(t.String(), t.Any())])
-    })
+    body: t.Union([
+      t.Object({
+        attachments: t.Union([t.String(), t.Record(t.String(), t.Any())])
+      }),
+      t.Object({ id: t.Union([t.String(), t.Number()]), data: t.String() })
+    ])
   })
   .post("/p", () => ({ "vMaj": 188, "vMinSrv": 1 }))
   .post(
