@@ -1372,11 +1372,11 @@ const app = new Elysia()
     type: "form"
   })
   .post("/inventory/delete", async ({ body }) => {
-    // Delete item from inventory: { page: number|string, itemIndex: number }
-    const { page, itemIndex } = body as any;
+    // Delete item from inventory: { page: number|string, thingId: string }
+    const { page, thingId } = body as any;
 
-    if (page === undefined || itemIndex === undefined) {
-      return new Response(JSON.stringify({ ok: false, error: "Missing page or itemIndex" }), {
+    if (page === undefined || thingId === undefined) {
+      return new Response(JSON.stringify({ ok: false, error: "Missing page or thingId" }), {
         status: 422,
         headers: { "Content-Type": "application/json" }
       });
@@ -1404,10 +1404,25 @@ const app = new Elysia()
 
     const pageKey = String(page);
     if (current.pages && current.pages[pageKey] && Array.isArray(current.pages[pageKey])) {
-      const index = parseInt(String(itemIndex), 10);
-      if (index >= 0 && index < current.pages[pageKey].length) {
-        current.pages[pageKey].splice(index, 1);
-        console.log(`[INVENTORY] deleted item at index ${index} from page ${page}`);
+      // Find and remove item by thingId
+      const initialLength = current.pages[pageKey].length;
+      current.pages[pageKey] = current.pages[pageKey].filter((item: any) => {
+        if (typeof item === 'string') {
+          try {
+            const parsed = JSON.parse(item);
+            return parsed.Tid !== thingId;
+          } catch {
+            return true; // Keep if can't parse
+          }
+        } else if (typeof item === 'object' && item !== null) {
+          return item.Tid !== thingId;
+        }
+        return true; // Keep if not an object
+      });
+      
+      const removedCount = initialLength - current.pages[pageKey].length;
+      if (removedCount > 0) {
+        console.log(`[INVENTORY] deleted ${removedCount} item(s) with thingId ${thingId} from page ${page}`);
       }
     }
 
@@ -1421,7 +1436,7 @@ const app = new Elysia()
   }, {
     body: t.Object({
       page: t.Union([t.String(), t.Number()]),
-      itemIndex: t.Number()
+      thingId: t.String()
     }),
     type: "form"
   })
