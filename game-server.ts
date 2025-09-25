@@ -1271,13 +1271,17 @@ const app = new Elysia()
       const file = Bun.file(invPath);
       if (await file.exists()) {
         const data = await file.json();
-        // Support either flat ids list or paged store
-        if (Array.isArray(data?.ids)) {
-          items = data.ids;
-        } else if (data && typeof data === "object" && data.pages && typeof data.pages === "object") {
-          const pageItems = data.pages[String(page)];
-          if (Array.isArray(pageItems)) items = pageItems;
-        }
+        if (Array.isArray(data?.ids)) items = data.ids;
+      }
+    } catch {}
+
+    // Prefer inventory stored in account.json
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      const inv = account?.inventory;
+      if (inv && inv.pages && typeof inv.pages === "object") {
+        const pageItems = inv.pages[String(page)];
+        if (Array.isArray(pageItems)) items = pageItems;
       }
     } catch {}
 
@@ -1304,20 +1308,20 @@ const app = new Elysia()
       personId = account.personId || personId;
     } catch {}
 
-    const invDir = `./data/person/inventory`;
-    const invPath = `${invDir}/${personId}.json`;
-
-    await fs.mkdir(invDir, { recursive: true });
-
-    let current: { ids?: string[]; pages?: Record<string, string[]> } = {};
+    // Load account.json and embed inventory there
+    const accountPath = "./data/person/account.json";
+    let accountData: Record<string, any> = {};
     try {
-      const file = Bun.file(invPath);
-      if (await file.exists()) {
-        const data = await file.json();
-        if (Array.isArray(data?.ids)) current.ids = data.ids;
-        if (data && typeof data === "object" && data.pages && typeof data.pages === "object") current.pages = data.pages;
-      }
-    } catch {}
+      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let current: { ids?: string[]; pages?: Record<string, string[]> } = accountData.inventory || {};
+    if (!current) current = {};
 
     if (Array.isArray(invUpdate?.ids)) {
       current.ids = invUpdate.ids.map(String);
@@ -1337,18 +1341,15 @@ const app = new Elysia()
       });
     }
 
-    await fs.writeFile(invPath, JSON.stringify(current, null, 2));
+    accountData.inventory = current;
+    await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
   }, {
-    body: t.Union([
-      t.Object({ ids: t.Array(t.Union([t.String(), t.Number()])) }),
-      t.Object({ id: t.Union([t.String(), t.Number()]) }),
-      t.Object({ page: t.Union([t.String(), t.Number()]), inventoryItem: t.String() })
-    ])
+    body: t.Unknown()
   })
   .post("/thing", async ({ body }) => {
     const { name = "" } = body;
