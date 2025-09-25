@@ -1271,10 +1271,17 @@ const app = new Elysia()
       const file = Bun.file(invPath);
       if (await file.exists()) {
         const data = await file.json();
-        if (Array.isArray(data?.ids)) items = data.ids;
+        // Support either flat ids list or paged store
+        if (Array.isArray(data?.ids)) {
+          items = data.ids;
+        } else if (data && typeof data === "object" && data.pages && typeof data.pages === "object") {
+          const pageItems = data.pages[String(page)];
+          if (Array.isArray(pageItems)) items = pageItems;
+        }
       }
     } catch {}
 
+    // If using paged store, items already represent this page. If flat, paginate by 20
     const pageSize = 20;
     const start = page * pageSize;
     const slice = items.slice(start, start + pageSize);
@@ -1285,7 +1292,10 @@ const app = new Elysia()
     });
   })
   .post("/inventory/save", async ({ body }) => {
-    // Accept either a full list { ids: [...] } or a single id { id: "..." }
+    // Accept one of:
+    // - { ids: [...] }
+    // - { id: "..." }
+    // - { page: number|string, inventoryItem: string }  // from client logs
     const invUpdate = body as any;
 
     let personId = "unknown";
@@ -1299,22 +1309,29 @@ const app = new Elysia()
 
     await fs.mkdir(invDir, { recursive: true });
 
-    let current: { ids: string[] } = { ids: [] };
+    let current: { ids?: string[]; pages?: Record<string, string[]> } = {};
     try {
       const file = Bun.file(invPath);
       if (await file.exists()) {
         const data = await file.json();
         if (Array.isArray(data?.ids)) current.ids = data.ids;
+        if (data && typeof data === "object" && data.pages && typeof data.pages === "object") current.pages = data.pages;
       }
     } catch {}
 
     if (Array.isArray(invUpdate?.ids)) {
       current.ids = invUpdate.ids.map(String);
-    } else if (invUpdate?.id) {
+    } else if (invUpdate?.id !== undefined) {
       const id = String(invUpdate.id);
+      if (!current.ids) current.ids = [];
       if (!current.ids.includes(id)) current.ids.push(id);
+    } else if (invUpdate?.page !== undefined && typeof invUpdate?.inventoryItem === "string") {
+      const pageKey = String(invUpdate.page);
+      if (!current.pages) current.pages = {};
+      if (!Array.isArray(current.pages[pageKey])) current.pages[pageKey] = [];
+      current.pages[pageKey].push(invUpdate.inventoryItem);
     } else {
-      return new Response(JSON.stringify({ ok: false, error: "Missing ids or id" }), {
+      return new Response(JSON.stringify({ ok: false, error: "Missing ids, id or (page, inventoryItem)" }), {
         status: 422,
         headers: { "Content-Type": "application/json" }
       });
@@ -1329,7 +1346,8 @@ const app = new Elysia()
   }, {
     body: t.Union([
       t.Object({ ids: t.Array(t.Union([t.String(), t.Number()])) }),
-      t.Object({ id: t.Union([t.String(), t.Number()]) })
+      t.Object({ id: t.Union([t.String(), t.Number()]) }),
+      t.Object({ page: t.Union([t.String(), t.Number()]), inventoryItem: t.String() })
     ])
   })
   .post("/thing", async ({ body }) => {
