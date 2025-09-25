@@ -1281,19 +1281,25 @@ const app = new Elysia()
     } catch {}
 
     // Prefer inventory stored in account.json
+    let usedPaged = false;
     try {
       const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
       const inv = account?.inventory;
       if (inv && inv.pages && typeof inv.pages === "object") {
         const pageItems = inv.pages[String(page)];
-        if (Array.isArray(pageItems)) items = pageItems;
+        if (Array.isArray(pageItems)) {
+          items = pageItems;
+          usedPaged = true;
+        }
       }
     } catch {}
 
-    // If using paged store, items already represent this page. If flat, paginate by 20
+    // If using paged store, items already represent this page; otherwise paginate flat list
     const pageSize = 20;
     const start = page * pageSize;
-    const slice = items.slice(start, start + pageSize);
+    const slice = usedPaged ? items : items.slice(start, start + pageSize);
+
+    console.log(`[INVENTORY] resolved page ${page} → count=${slice.length}`);
 
     return new Response(JSON.stringify({ inventoryItems: slice }), {
       status: 200,
@@ -1325,7 +1331,7 @@ const app = new Elysia()
       });
     }
 
-    let current: { ids?: string[]; pages?: Record<string, string[]> } = accountData.inventory || {};
+    let current: { ids?: string[]; pages?: Record<string, any[]> } = accountData.inventory || {};
     if (!current) current = {};
 
     if (Array.isArray(invUpdate?.ids)) {
@@ -1338,7 +1344,9 @@ const app = new Elysia()
       const pageKey = String(invUpdate.page);
       if (!current.pages) current.pages = {};
       if (!Array.isArray(current.pages[pageKey])) current.pages[pageKey] = [];
-      current.pages[pageKey].push(invUpdate.inventoryItem);
+      let parsedItem: any = invUpdate.inventoryItem;
+      try { parsedItem = JSON.parse(invUpdate.inventoryItem); } catch {}
+      current.pages[pageKey].push(parsedItem);
     } else {
       return new Response(JSON.stringify({ ok: false, error: "Missing ids, id or (page, inventoryItem)" }), {
         status: 422,
