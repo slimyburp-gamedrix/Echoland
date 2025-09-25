@@ -71,10 +71,10 @@ Get started here: [https://www.docker.com/get-started](https://www.docker.com/ge
 #### If you have the Steam version:
 ```
 
-yourserverip  app.anyland.com
-yourserverip  d6ccx151yatz6.cloudfront.net
+yourserverip app.anyland.com
+yourserverip d6ccx151yatz6.cloudfront.net
 yourserverip d26e4xubm8adxu.cloudfront.net
-#yourserverip  steamuserimages-a.akamaihd.net
+#yourserverip steamuserimages-a.akamaihd.net
 ```
 
 
