@@ -68,20 +68,27 @@ Get started here: [https://www.docker.com/get-started](https://www.docker.com/ge
 ### 2. Configure Hosts File
 
 #### If you have the Steam version:
-yourserverip app.anyland.com
-yourserverip d6ccx151yatz6.cloudfront.net
+```
+
+yourserverip  app.anyland.com
+yourserverip  anyland.com
+yourserverip  d6ccx151yatz6.cloudfront.net
 yourserverip d26e4xubm8adxu.cloudfront.net
-# yourserverip steamuserimages-a.akamaihd.net
+#yourserverip  steamuserimages-a.akamaihd.net
+```
 
 
 You won’t need the last line if you already have access to Steam artwork.  
 Use `127.0.0.1` if the server is on your local machine. Otherwise, use the IP of the machine hosting the server.
 
 #### If you’re using the non-Steam client:
+```
+
 yourserverip app.anyland.com
 yourserverip d6ccx151yatz6.cloudfront.net
 yourserverip d26e4xubm8adxu.cloudfront.net
 yourserverip steamuserimages-a.akamaihd.net
+```
 
 
 Download the client:  
