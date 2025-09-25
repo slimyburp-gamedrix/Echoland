@@ -1349,7 +1349,8 @@ const app = new Elysia()
       headers: { "Content-Type": "application/json" }
     });
   }, {
-    body: t.Unknown()
+    body: t.Unknown(),
+    type: "form"
   })
   .post("/thing", async ({ body }) => {
     const { name = "" } = body;
