@@ -68,20 +68,20 @@ Get started here: [https://www.docker.com/get-started](https://www.docker.com/ge
 ### 2. Configure Hosts File
 
 #### If you have the Steam version:
-"yourserverip" app.anyland.com
-"yourserverip" d6ccx151yatz6.cloudfront.net
-"yourserverip" d26e4xubm8adxu.cloudfront.net
-#"yourserverip" steamuserimages-a.akamaihd.net
+yourserverip app.anyland.com
+yourserverip d6ccx151yatz6.cloudfront.net
+yourserverip d26e4xubm8adxu.cloudfront.net
+# yourserverip steamuserimages-a.akamaihd.net
 
 
 You won’t need the last line if you already have access to Steam artwork.  
 Use `127.0.0.1` if the server is on your local machine. Otherwise, use the IP of the machine hosting the server.
 
 #### If you’re using the non-Steam client:
-"yourserverip" app.anyland.com
-"yourserverip" d6ccx151yatz6.cloudfront.net
-"yourserverip" d26e4xubm8adxu.cloudfront.net
-"yourserverip" steamuserimages-a.akamaihd.net
+yourserverip app.anyland.com
+yourserverip d6ccx151yatz6.cloudfront.net
+yourserverip d26e4xubm8adxu.cloudfront.net
+yourserverip steamuserimages-a.akamaihd.net
 
 
 Download the client:  
@@ -97,7 +97,16 @@ Place the images folder inside the main Echoland directory.
 [Archive Data Release](https://github.com/Echoland-AL/echoland/releases/tag/archive-data)
 
 Extract the `data.zip` contents into your Echoland server folder:
-echoland-server-folder/ ├── echoland-server-windows-x64.exe ├── echoland-server-linux-x64 ├── echoland-server-linux-arm64 └── data/ ├── area/ ├── person/ ├── thing/ ├── placement/ └── forum/
+echoland-server-folder/
+├── echoland-server-windows-x64.exe
+├── echoland-server-linux-x64
+├── echoland-server-linux-arm64
+└── data/
+    ├── area/
+    ├── person/
+    ├── thing/
+    ├── placement/
+    └── forum/
 
 
 ### 4. Start the Server
