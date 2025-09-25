@@ -9,9 +9,9 @@ Echoland is a community project I’ve been building myself, based on:
 - The archiver work by Zetaphor and Cyel  
 - The skeleton game server originally created by Cyel
 
-Since I’m still getting familiar with Git, I’ve created a separate repo with a simple Docker-based setup so anyone can run the server locally—even if it’s not 100% functional yet.
+Since I’m still getting familiar with Git, I’ve created a separate repo with a simple Docker-based setup so anyone can run the server locally, even if it’s not 100% functional yet.
 
-This is a community-driven effort. I started this with the goal of creating an open-source, writable archive. I’m not a trained developer—just someone diving in and learning as I go. The goal is to give the community a solid foundation to build their own servers, fully customizable and free to modify however you like.
+This is a community-driven effort. I started this with the goal of creating an open-source, writable archive. I’m not a trained developer, just someone diving in and learning as I go. The goal is to give the community a solid foundation to build their own servers, fully customizable and free to modify however you like.
 
 ## Current Features
 
