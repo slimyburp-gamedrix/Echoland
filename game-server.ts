@@ -1280,7 +1280,13 @@ const app = new Elysia()
       if (inv && inv.pages && typeof inv.pages === "object") {
         const pageItems = inv.pages[String(page)];
         if (Array.isArray(pageItems)) {
-          items = pageItems;
+          // Parse stringified items back to objects
+          items = pageItems.map(item => {
+            if (typeof item === "string") {
+              try { return JSON.parse(item); } catch { return item; }
+            }
+            return item;
+          });
         }
       }
     } catch {}
