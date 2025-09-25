@@ -1270,30 +1270,38 @@ const app = new Elysia()
       personId = account.personId || personId;
     } catch {}
 
-    console.log(`[INVENTORY] GET page ${page} (personId: ${personId})`);
+    const invPath = `./data/person/inventory/${personId}.json`;
+    let items: string[] = [];
+    try {
+      const file = Bun.file(invPath);
+      if (await file.exists()) {
+        const data = await file.json();
+        if (Array.isArray(data?.ids)) items = data.ids;
+      }
+    } catch {}
 
-    // Load inventory from account.json
-    let items: any[] = [];
+    // Prefer inventory stored in account.json
+    let usedPaged = false;
     try {
       const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
       const inv = account?.inventory;
       if (inv && inv.pages && typeof inv.pages === "object") {
         const pageItems = inv.pages[String(page)];
         if (Array.isArray(pageItems)) {
-          // Parse stringified items back to objects
-          items = pageItems.map(item => {
-            if (typeof item === "string") {
-              try { return JSON.parse(item); } catch { return item; }
-            }
-            return item;
-          });
+          items = pageItems;
+          usedPaged = true;
         }
       }
     } catch {}
 
-    console.log(`[INVENTORY] resolved page ${page} → count=${items.length}, items:`, JSON.stringify(items.slice(0, 2)));
+    // If using paged store, items already represent this page; otherwise paginate flat list
+    const pageSize = 20;
+    const start = page * pageSize;
+    const slice = usedPaged ? items : items.slice(start, start + pageSize);
 
-    return new Response(JSON.stringify(items), {
+    console.log(`[INVENTORY] resolved page ${page} → count=${slice.length}`);
+
+    return new Response(JSON.stringify({ inventoryItems: slice }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
