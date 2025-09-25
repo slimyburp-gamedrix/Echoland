@@ -17,7 +17,8 @@ This is a community-driven effort. I started this with the goal of creating an o
 
 - Create an area and build things  
 - Automatically assigned name and area  
-- Inventory and body attachment systems are not yet implemented
+- Inventory is not yet implemented
+- Body Attachments Works
 - Newly created areas may return as private until you restart the server  
 - Repo posted early due to excitement  
 - Actively in development—and open for community contributions
