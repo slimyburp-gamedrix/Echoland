@@ -1,0 +1,7 @@
+data/
+node_modules/
+cache/
+build/
+echoland-server-linux-x64
+echoland-server-windows-x64.exe
+echoland-server-linux-arm64

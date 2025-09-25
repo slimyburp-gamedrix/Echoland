@@ -1,0 +1,26 @@
+{
+  "name": "echoland",
+  "version": "0.1.0",
+  "description": "A single player server for the defunct VR creation platform Anyland",
+  "main": "game-server.ts",
+  "scripts": {
+    "start": "bun game-server.ts",
+    "dev": "bun --watch game-server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:linux": "bun build --compile --target=bun-linux-x64 ./game-server.ts --outfile build/echoland-server-linux-x64",
+    "build:windows": "bun build --compile --target=bun-windows-x64 ./game-server.ts --outfile build/echoland-server-windows-x64",
+    "build:arm": "bun build --compile --target=bun-linux-arm64 ./game-server.ts --outfile build/echoland-server-linux-arm64"
+  },
+  "author": "GAMEDRIX",
+  "license": "AGPLv3.0",
+  "dependencies": {
+    "elysia": "^0.8.6",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
