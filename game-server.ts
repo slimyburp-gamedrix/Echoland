@@ -1371,6 +1371,126 @@ const app = new Elysia()
     body: t.Unknown(),
     type: "form"
   })
+  .post("/inventory/delete", async ({ body }) => {
+    // Delete item from inventory: { page: number|string, itemIndex: number }
+    const { page, itemIndex } = body as any;
+
+    if (page === undefined || itemIndex === undefined) {
+      return new Response(JSON.stringify({ ok: false, error: "Missing page or itemIndex" }), {
+        status: 422,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let personId = "unknown";
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      personId = account.personId || personId;
+    } catch {}
+
+    const accountPath = "./data/person/account.json";
+    let accountData: Record<string, any> = {};
+    try {
+      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let current: { ids?: string[]; pages?: Record<string, any[]> } = accountData.inventory || {};
+    if (!current) current = {};
+
+    const pageKey = String(page);
+    if (current.pages && current.pages[pageKey] && Array.isArray(current.pages[pageKey])) {
+      const index = parseInt(String(itemIndex), 10);
+      if (index >= 0 && index < current.pages[pageKey].length) {
+        current.pages[pageKey].splice(index, 1);
+        console.log(`[INVENTORY] deleted item at index ${index} from page ${page}`);
+      }
+    }
+
+    accountData.inventory = current;
+    await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }, {
+    body: t.Object({
+      page: t.Union([t.String(), t.Number()]),
+      itemIndex: t.Number()
+    }),
+    type: "form"
+  })
+  .post("/inventory/move", async ({ body }) => {
+    // Move item within inventory: { fromPage: number|string, fromIndex: number, toPage: number|string, toIndex: number }
+    const { fromPage, fromIndex, toPage, toIndex } = body as any;
+
+    if (fromPage === undefined || fromIndex === undefined || toPage === undefined || toIndex === undefined) {
+      return new Response(JSON.stringify({ ok: false, error: "Missing fromPage, fromIndex, toPage, or toIndex" }), {
+        status: 422,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let personId = "unknown";
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      personId = account.personId || personId;
+    } catch {}
+
+    const accountPath = "./data/person/account.json";
+    let accountData: Record<string, any> = {};
+    try {
+      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let current: { ids?: string[]; pages?: Record<string, any[]> } = accountData.inventory || {};
+    if (!current) current = {};
+    if (!current.pages) current.pages = {};
+
+    const fromPageKey = String(fromPage);
+    const toPageKey = String(toPage);
+    const fromIdx = parseInt(String(fromIndex), 10);
+    const toIdx = parseInt(String(toIndex), 10);
+
+    // Ensure both pages exist
+    if (!Array.isArray(current.pages[fromPageKey])) current.pages[fromPageKey] = [];
+    if (!Array.isArray(current.pages[toPageKey])) current.pages[toPageKey] = [];
+
+    // Move item if valid indices
+    if (fromIdx >= 0 && fromIdx < current.pages[fromPageKey].length) {
+      const item = current.pages[fromPageKey].splice(fromIdx, 1)[0];
+      if (toIdx >= 0 && toIdx <= current.pages[toPageKey].length) {
+        current.pages[toPageKey].splice(toIdx, 0, item);
+        console.log(`[INVENTORY] moved item from page ${fromPage}[${fromIdx}] to page ${toPage}[${toIdx}]`);
+      }
+    }
+
+    accountData.inventory = current;
+    await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }, {
+    body: t.Object({
+      fromPage: t.Union([t.String(), t.Number()]),
+      fromIndex: t.Number(),
+      toPage: t.Union([t.String(), t.Number()]),
+      toIndex: t.Number()
+    }),
+    type: "form"
+  })
   .post("/inventory/update", async ({ body }) => {
     // Mirror /inventory/save behavior; some clients call update
     const invUpdate = body as any;
