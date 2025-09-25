@@ -23,7 +23,7 @@ This is a community-driven effort. I started this with the goal of creating an o
 
 ## Looking to Just Play?
 
-If you're looking for a more functional server just to play the game, check out REnyland—a server I helped beta test. All server-side work was done by the creator Axsys.
+If you're looking for a more functional server just to play the game, check out REnyland, a server I helped beta test. All server-side work was done by the creator Axsys.
 
 REnyland is not open source (yet) as it’s still being finalized. Echoland is offered as an alternative for those who want to tinker, explore, or build their own thing.
 
