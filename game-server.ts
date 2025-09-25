@@ -1259,12 +1259,18 @@ const app = new Elysia()
       isFindable: t.Optional(t.Boolean())
     })
   })
-  .get("/inventory/:personId/:page", async ({ params }) => {
+  .get("/inventory/:page", async ({ params }) => {
     const pageParam = params?.page;
-    const personId = params?.personId;
     const page = Math.max(0, parseInt(String(pageParam), 10) || 0);
 
-    console.log(`[INVENTORY] GET ${personId}/page ${page}`);
+    // Load current user id from account.json
+    let personId = "unknown";
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      personId = account.personId || personId;
+    } catch {}
+
+    console.log(`[INVENTORY] GET page ${page} (personId: ${personId})`);
 
     // Load inventory from account.json
     let items: any[] = [];
@@ -1285,95 +1291,6 @@ const app = new Elysia()
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
-  })
-  .get("/inventory/:page", async ({ params }) => {
-    const pageParam = params?.page;
-    const page = Math.max(0, parseInt(String(pageParam), 10) || 0);
-
-    // Load current user id from account.json
-    let personId = "unknown";
-    try {
-      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
-      personId = account.personId || personId;
-    } catch {}
-
-    const invPath = `./data/person/inventory/${personId}.json`;
-    let items: string[] = [];
-    try {
-      const file = Bun.file(invPath);
-      if (await file.exists()) {
-        const data = await file.json();
-        if (Array.isArray(data?.ids)) items = data.ids;
-      }
-    } catch {}
-
-    // Prefer inventory stored in account.json
-    let usedPaged = false;
-    try {
-      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
-      const inv = account?.inventory;
-      if (inv && inv.pages && typeof inv.pages === "object") {
-        const pageItems = inv.pages[String(page)];
-        if (Array.isArray(pageItems)) {
-          items = pageItems;
-          usedPaged = true;
-        }
-      }
-    } catch {}
-
-    // If using paged store, items already represent this page; otherwise paginate flat list
-    const pageSize = 20;
-    const start = page * pageSize;
-    const slice = usedPaged ? items : items.slice(start, start + pageSize);
-
-    console.log(`[INVENTORY] resolved page ${page} → count=${slice.length}, items:`, JSON.stringify(slice.slice(0, 2)));
-
-    // Try different response formats that might be expected
-    const response = slice.length > 0 ? slice : [];
-    return new Response(JSON.stringify(response), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
-  })
-  .post("/inventory/:personId/:page", async ({ params, body }) => {
-    const pageParam = params?.page;
-    const personId = params?.personId;
-    const page = Math.max(0, parseInt(String(pageParam), 10) || 0);
-
-    console.log(`[INVENTORY] POST ${personId}/page ${page}`);
-
-    // Load account.json and embed inventory there
-    const accountPath = "./data/person/account.json";
-    let accountData: Record<string, any> = {};
-    try {
-      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
-    } catch {
-      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    let current: { ids?: string[]; pages?: Record<string, any[]> } = accountData.inventory || {};
-    if (!current) current = {};
-
-    // Accept inventory items as array or single item
-    const invItems = Array.isArray(body) ? body : [body];
-    
-    if (!current.pages) current.pages = {};
-    current.pages[String(page)] = invItems;
-
-    accountData.inventory = current;
-    await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
-
-    console.log(`[INVENTORY] saved ${invItems.length} items to page ${page}`);
-
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
-  }, {
-    body: t.Unknown()
   })
   .post("/inventory/save", async ({ body }) => {
     // Accept one of:
