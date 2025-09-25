@@ -5,7 +5,25 @@ Echoland is a single player (for now) user server for the defunct VR creation pl
 
 ## About
 
-Echoland is a community project built by [GAMEDRIX](https://github.com/slimyburp-gamedrix), building atop the previous archiver work by Zetaphor and Cyel, and the skeleton game server by Cyel.
+Echoland is a community project I’ve been building myself, based on the archiver work by Zetaphor and Cyel, and the skeleton game server originally created by Cyel.
+Since I’m still getting familiar with Git, I’ve created a separate repo where I’ll be setting up a simple Docker-based install, so anyone can run the server locally, even if it’s not 100% functional yet.
+
+Just a heads-up: this is a community-driven effort. I started this with the goal of creating an open-source, writable archive. 
+
+I’m not a trained developer, just someone diving in and learning as I go. The main goal is to give the community a solid foundation to build their own servers, fully customizable and free to modify however you like.
+
+Basically, you can now create an area and build things, you’ll be assigned a name and an area automatically. Inventory and body attachment systems aren’t working yet since they still need to be implemented. 
+I posted the repo anyway because I couldn’t wait any longer lol. 
+But no worries, I’m still working on it, and the real magic is that any of you can too!
+
+If you're just looking to play the game with a more functional setup, I recommend REnyland, a server I helped beta test. 
+
+All the server-side work for Renyland was done by the creator, Axsys. REnyland isn’t open source (yet), as it’s still being finalized, 
+but I’m offering Echoland as an alternative for those who want to tinker, explore, 
+or build their own thing (especially me lol ❤️).
+
+Disclaimer: I take no responsibility if the server breaks or if you lose your in-game progress. Once you’ve downloaded it, it’s all yours!
+
 
 ## License
 
@@ -28,13 +46,33 @@ See [DEVELOPMENT.md](DEVELOPMENT.md). The server is written in Typescript and ru
 
 ## Setup and running
 
-Download the latest server binary from the [releases page](https://github.com/Echoland-AL/echoland/releases/latest).
+First download Docker Setup and run it : https://www.docker.com/get-started/
 
-Download and extract the [Echoland Client](https://github.com/Echoland-AL/echoland/releases/tag/echoland-client).
+If you have steam change your hosts files : 
+"yourserverip" app.anyland.com
+"yourserverip" d6ccx151yatz6.cloudfront.net
+"yourserverip" d26e4xubm8adxu.cloudfront.net
+#"yourserverip" steamuserimages-a.akamaihd.net
+*You'll not be using the last port as you already have acces to the steam artwork.
+
+It will be : "127.0.0.1" (without quotes) if your server is on your local machine, if you start the server on another machine, 
+then, you'll need to use it's ip.
+
+If your game is non-steam and the client you downloaded change your hosts files : 
+
+"yourserverip" app.anyland.com
+"yourserverip" d6ccx151yatz6.cloudfront.net
+"yourserverip" d26e4xubm8adxu.cloudfront.net
+"yourserverip" steamuserimages-a.akamaihd.net
+
+If you don't have the steam game please use the client : https://github.com/Echoland-AL/echoland/releases/tag/echoland-client
+
+Again for non steam user you'd need the images : https://drive.google.com/file/d/1rSRWNtBepypfqHQ9LRPpDAsouAsByMCl/view?usp=drive_link
+The images folder is placed inside the main folder.
 
 Download and the [Anyland archive data file](https://github.com/Echoland-AL/echoland/releases/tag/archive-data).
 
-Extract the `data.zip` contents into the Echoland server folder:
+Extract the `data.zip` contents into the main Echoland server folder.
 
 ```
 echoland-server-folder
@@ -49,26 +87,12 @@ echoland-server-folder
     └── forum
 ```
 
+
 ### Start the server
 
-Run the binary for your platform.
+Start Docker if not done already and then,
+There's a start-server.bat file that you can start directly or open cmd type in after selecting the folder with the cd function : docker compose up
+You can also make a shortcut of that .bat file for a rapid start.
+It will take some time for the area index to load, afterwards you'll have a cache so the next time you start the server it will start in an instant.
 
-*Windows*: Run `echoland-server-windows-x64.exe`.
 
-*Linux*: Run `echoland-server-linux-x64` or `echoland-server-linux-arm64`.
-
-### Start the client:
-
-~~Note that this client does not require modification of the OS `hosts` file, it has been preconfigured to work with local servers.~~
-
-Still needs Caddy for now, see [DEVELOPMENT.md](DEVELOPMENT.md).
-
-### Windows
-
-Run `anyland.exe` from the Echoland Client folder you downloaded and extracted.
-
-### Linux
-
-Configure your Proton version and Echoland client download path in `launch-anyland-linux.sh` and run the script.
-
-The environment variables for running in VR with WiVRn are also preconfigured in the script. See the [LVRA wiki](https://lvra.gitlab.io) for more information on VR on Linux.
