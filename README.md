@@ -13,6 +13,8 @@ Since I’m still getting familiar with Git, I’ve created a separate repo with
 
 This is a community-driven effort. I started this with the goal of creating an open-source, writable archive. I’m not a trained developer, just someone diving in and learning as I go. The goal is to give the community a solid foundation to build their own servers, fully customizable and free to modify however you like.
 
+It's safe to say that now, Anyland will live on—endlessly, openly, and forever in the hands of its community.
+
 ## Current Features
 
 - Create an area and build things  
