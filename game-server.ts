@@ -1540,7 +1540,43 @@ const app = new Elysia()
       const pageKey = String(invUpdate.page);
       if (!current.pages) current.pages = {};
       if (!Array.isArray(current.pages[pageKey])) current.pages[pageKey] = [];
-      current.pages[pageKey].push(invUpdate.inventoryItem);
+      
+      let parsedItem: any = invUpdate.inventoryItem;
+      try { parsedItem = JSON.parse(invUpdate.inventoryItem); } catch {}
+      
+      // Find and replace existing item with same Tid, or add if not found
+      const thingId = parsedItem?.Tid;
+      if (thingId) {
+        let found = false;
+        for (let i = 0; i < current.pages[pageKey].length; i++) {
+          const existingItem = current.pages[pageKey][i];
+          let existingTid = null;
+          
+          if (typeof existingItem === 'string') {
+            try {
+              const parsed = JSON.parse(existingItem);
+              existingTid = parsed.Tid;
+            } catch {}
+          } else if (typeof existingItem === 'object' && existingItem !== null) {
+            existingTid = existingItem.Tid;
+          }
+          
+          if (existingTid === thingId) {
+            current.pages[pageKey][i] = parsedItem;
+            found = true;
+            console.log(`[INVENTORY] updated item with thingId ${thingId} on page ${pageKey}`);
+            break;
+          }
+        }
+        
+        if (!found) {
+          current.pages[pageKey].push(parsedItem);
+          console.log(`[INVENTORY] added new item with thingId ${thingId} to page ${pageKey}`);
+        }
+      } else {
+        // Fallback: just add the item
+        current.pages[pageKey].push(parsedItem);
+      }
     } else {
       return new Response(JSON.stringify({ ok: false, error: "Missing ids, id or (page, inventoryItem)" }), {
         status: 422,
