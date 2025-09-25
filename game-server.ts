@@ -364,7 +364,9 @@ const app = new Elysia()
         isFindable: true,
         age: 0,
         ageSecs: 0,
-        attachments: "{}",
+        attachments: typeof account.attachments === "string"
+          ? account.attachments
+          : JSON.stringify(account.attachments ?? {}),
         isSoftBanned: false,
         showFlagWarning: false,
         flagTags: [],
@@ -389,6 +391,53 @@ const app = new Elysia()
       })
     }
   )
+  // Save avatar body attachments to account.json
+  .post("/person/updateattachment", async ({ body }) => {
+    const { attachments } = body as any;
+
+    // attachments expected as a JSON string
+    if (attachments === undefined) {
+      return new Response(JSON.stringify({ ok: false, error: "Missing attachments" }), {
+        status: 422,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let parsed: unknown = attachments;
+    if (typeof attachments === "string") {
+      try {
+        parsed = JSON.parse(attachments);
+      } catch {
+        return new Response(JSON.stringify({ ok: false, error: "attachments must be JSON or JSON string" }), {
+          status: 422,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    const accountPath = "./data/person/account.json";
+    let accountData: Record<string, any> = {};
+    try {
+      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    accountData.attachments = parsed;
+    await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }, {
+    body: t.Object({
+      attachments: t.Union([t.String(), t.Record(t.String(), t.Any())])
+    })
+  })
   .post("/p", () => ({ "vMaj": 188, "vMinSrv": 1 }))
   .post(
     "/area/load",
