@@ -1295,7 +1295,7 @@ const app = new Elysia()
     const start = page * pageSize;
     const slice = items.slice(start, start + pageSize);
 
-    return new Response(JSON.stringify(slice), {
+    return new Response(JSON.stringify({ inventoryItems: slice }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
@@ -1350,6 +1350,64 @@ const app = new Elysia()
     await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
 
     // Also mirror to per-user inventory file for compatibility
+    const invDir = `./data/person/inventory`;
+    const invPath = `${invDir}/${personId}.json`;
+    await fs.mkdir(invDir, { recursive: true });
+    await fs.writeFile(invPath, JSON.stringify(current, null, 2));
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }, {
+    body: t.Unknown(),
+    type: "form"
+  })
+  .post("/inventory/update", async ({ body }) => {
+    // Mirror /inventory/save behavior; some clients call update
+    const invUpdate = body as any;
+
+    let personId = "unknown";
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      personId = account.personId || personId;
+    } catch {}
+
+    const accountPath = "./data/person/account.json";
+    let accountData: Record<string, any> = {};
+    try {
+      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let current: { ids?: string[]; pages?: Record<string, string[]> } = accountData.inventory || {};
+    if (!current) current = {};
+
+    if (Array.isArray(invUpdate?.ids)) {
+      current.ids = invUpdate.ids.map(String);
+    } else if (invUpdate?.id !== undefined) {
+      const id = String(invUpdate.id);
+      if (!current.ids) current.ids = [];
+      if (!current.ids.includes(id)) current.ids.push(id);
+    } else if (invUpdate?.page !== undefined && typeof invUpdate?.inventoryItem === "string") {
+      const pageKey = String(invUpdate.page);
+      if (!current.pages) current.pages = {};
+      if (!Array.isArray(current.pages[pageKey])) current.pages[pageKey] = [];
+      current.pages[pageKey].push(invUpdate.inventoryItem);
+    } else {
+      return new Response(JSON.stringify({ ok: false, error: "Missing ids, id or (page, inventoryItem)" }), {
+        status: 422,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    accountData.inventory = current;
+    await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
+
     const invDir = `./data/person/inventory`;
     const invPath = `${invDir}/${personId}.json`;
     await fs.mkdir(invDir, { recursive: true });
