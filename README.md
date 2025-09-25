@@ -71,7 +71,6 @@ Get started here: [https://www.docker.com/get-started](https://www.docker.com/ge
 ```
 
 yourserverip  app.anyland.com
-yourserverip  anyland.com
 yourserverip  d6ccx151yatz6.cloudfront.net
 yourserverip d26e4xubm8adxu.cloudfront.net
 #yourserverip  steamuserimages-a.akamaihd.net
