@@ -1254,11 +1254,84 @@ const app = new Elysia()
       isFindable: t.Optional(t.Boolean())
     })
   })
-  .get("/inventory/:page",
-    () => {
-      return { "inventoryItems": null }
-    },
-  )
+  .get("/inventory/:page", async ({ params }) => {
+    const pageParam = params?.page;
+    const page = Math.max(0, parseInt(String(pageParam), 10) || 0);
+
+    // Load current user id from account.json
+    let personId = "unknown";
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      personId = account.personId || personId;
+    } catch {}
+
+    const invPath = `./data/person/inventory/${personId}.json`;
+    let items: string[] = [];
+    try {
+      const file = Bun.file(invPath);
+      if (await file.exists()) {
+        const data = await file.json();
+        if (Array.isArray(data?.ids)) items = data.ids;
+      }
+    } catch {}
+
+    const pageSize = 20;
+    const start = page * pageSize;
+    const slice = items.slice(start, start + pageSize);
+
+    return new Response(JSON.stringify({ inventoryItems: slice }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  })
+  .post("/inventory/save", async ({ body }) => {
+    // Accept either a full list { ids: [...] } or a single id { id: "..." }
+    const invUpdate = body as any;
+
+    let personId = "unknown";
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      personId = account.personId || personId;
+    } catch {}
+
+    const invDir = `./data/person/inventory`;
+    const invPath = `${invDir}/${personId}.json`;
+
+    await fs.mkdir(invDir, { recursive: true });
+
+    let current: { ids: string[] } = { ids: [] };
+    try {
+      const file = Bun.file(invPath);
+      if (await file.exists()) {
+        const data = await file.json();
+        if (Array.isArray(data?.ids)) current.ids = data.ids;
+      }
+    } catch {}
+
+    if (Array.isArray(invUpdate?.ids)) {
+      current.ids = invUpdate.ids.map(String);
+    } else if (invUpdate?.id) {
+      const id = String(invUpdate.id);
+      if (!current.ids.includes(id)) current.ids.push(id);
+    } else {
+      return new Response(JSON.stringify({ ok: false, error: "Missing ids or id" }), {
+        status: 422,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    await fs.writeFile(invPath, JSON.stringify(current, null, 2));
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }, {
+    body: t.Union([
+      t.Object({ ids: t.Array(t.Union([t.String(), t.Number()])) }),
+      t.Object({ id: t.Union([t.String(), t.Number()]) })
+    ])
+  })
   .post("/thing", async ({ body }) => {
     const { name = "" } = body;
     const thingId = generateObjectId();
