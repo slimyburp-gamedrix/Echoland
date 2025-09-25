@@ -1259,6 +1259,33 @@ const app = new Elysia()
       isFindable: t.Optional(t.Boolean())
     })
   })
+  .get("/inventory/:personId/:page", async ({ params }) => {
+    const pageParam = params?.page;
+    const personId = params?.personId;
+    const page = Math.max(0, parseInt(String(pageParam), 10) || 0);
+
+    console.log(`[INVENTORY] GET ${personId}/page ${page}`);
+
+    // Load inventory from account.json
+    let items: any[] = [];
+    try {
+      const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
+      const inv = account?.inventory;
+      if (inv && inv.pages && typeof inv.pages === "object") {
+        const pageItems = inv.pages[String(page)];
+        if (Array.isArray(pageItems)) {
+          items = pageItems;
+        }
+      }
+    } catch {}
+
+    console.log(`[INVENTORY] resolved page ${page} → count=${items.length}, items:`, JSON.stringify(items.slice(0, 2)));
+
+    return new Response(JSON.stringify(items), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  })
   .get("/inventory/:page", async ({ params }) => {
     const pageParam = params?.page;
     const page = Math.max(0, parseInt(String(pageParam), 10) || 0);
@@ -1299,12 +1326,54 @@ const app = new Elysia()
     const start = page * pageSize;
     const slice = usedPaged ? items : items.slice(start, start + pageSize);
 
-    console.log(`[INVENTORY] resolved page ${page} → count=${slice.length}`);
+    console.log(`[INVENTORY] resolved page ${page} → count=${slice.length}, items:`, JSON.stringify(slice.slice(0, 2)));
 
-    return new Response(JSON.stringify({ inventoryItems: slice }), {
+    // Try different response formats that might be expected
+    const response = slice.length > 0 ? slice : [];
+    return new Response(JSON.stringify(response), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
+  })
+  .post("/inventory/:personId/:page", async ({ params, body }) => {
+    const pageParam = params?.page;
+    const personId = params?.personId;
+    const page = Math.max(0, parseInt(String(pageParam), 10) || 0);
+
+    console.log(`[INVENTORY] POST ${personId}/page ${page}`);
+
+    // Load account.json and embed inventory there
+    const accountPath = "./data/person/account.json";
+    let accountData: Record<string, any> = {};
+    try {
+      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    let current: { ids?: string[]; pages?: Record<string, any[]> } = accountData.inventory || {};
+    if (!current) current = {};
+
+    // Accept inventory items as array or single item
+    const invItems = Array.isArray(body) ? body : [body];
+    
+    if (!current.pages) current.pages = {};
+    current.pages[String(page)] = invItems;
+
+    accountData.inventory = current;
+    await fs.writeFile(accountPath, JSON.stringify(accountData, null, 2));
+
+    console.log(`[INVENTORY] saved ${invItems.length} items to page ${page}`);
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }, {
+    body: t.Unknown()
   })
   .post("/inventory/save", async ({ body }) => {
     // Accept one of:
