@@ -102,18 +102,7 @@ Place the images folder inside the main Echoland directory.
 
 [Archive Data Release](https://github.com/Echoland-AL/echoland/releases/tag/archive-data)
 
-Extract the `data.zip` contents into your Echoland server folder:
-echoland-server-folder/
-├── echoland-server-windows-x64.exe
-├── echoland-server-linux-x64
-├── echoland-server-linux-arm64
-└── data/
-    ├── area/
-    ├── person/
-    ├── thing/
-    ├── placement/
-    └── forum/
-
+Extract the `data.zip` contents into your Echoland server folder named as "data"
 
 ### 4. Start the Server
 
