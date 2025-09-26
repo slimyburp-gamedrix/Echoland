@@ -63,7 +63,7 @@ export const areaRoutes = new Elysia()
     { body: t.Object({ areaId: t.String() }) }
   )
   .post("/area/save",
-    async ({ body }) => {
+    async ({ body }: any) => {
       const areaId = body.id || generateObjectId();
       const filePath = `./data/area/load/${areaId}.json`;
 
