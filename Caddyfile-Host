@@ -1,0 +1,22 @@
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	handle {
+		reverse_proxy 127.0.0.1:8000
+	}
+}
+
+http://d6ccx151yatz6.cloudfront.net {
+	reverse_proxy 127.0.0.1:8001
+}
+
+http://d26e4xubm8adxu.cloudfront.net {
+	reverse_proxy 127.0.0.1:8002
+}
+
+http://steamuserimages-a.akamaihd.net {
+	reverse_proxy 127.0.0.1:8003
+}
