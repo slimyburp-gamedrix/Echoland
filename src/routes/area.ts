@@ -43,12 +43,14 @@ export const areaRoutes = new Elysia()
         console.log("client asked to load", areaUrlName, " - found", areaId);
 
         if (areaId) {
-          console.error("couldn't find area", areaUrlName, "in our index?")
-          return await Bun.file(path.resolve("./data/area/load/" + areaId + ".json")).json()
+          const file = Bun.file(path.resolve("./data/area/load/" + areaId + ".json"))
+          if (await file.exists()) {
+            return await file.json()
+          }
         }
-        else {
-          return Response.json({ "ok": false, "_reasonDenied": "Private", "serveTime": 13 }, { status: 200 })
-        }
+        // if we fall through, we couldn't find it
+        console.error("couldn't find area", areaUrlName, "in our index?")
+        return Response.json({ "ok": false, "_reasonDenied": "Private", "serveTime": 13 }, { status: 200 })
       }
 
       console.error("client asked for neither an areaId or an areaUrlName?")
