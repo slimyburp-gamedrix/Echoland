@@ -98,11 +98,23 @@ export const personRoutes = new Elysia()
     { body: t.Object({ areaId: t.String(), userId: t.String() }) }
   )
   .post("/person/updatesetting", async ({ body }) => {
-    const { personId, screenName, statusText, isFindable } = body;
+    const { name, value } = body;
 
-    if (!personId || typeof personId !== "string") {
-      return new Response(JSON.stringify({ ok: false, error: "Missing or invalid personId" }), {
-        status: 422,
+    const accountPath = "./data/person/account.json";
+    let accountData: { personId?: string };
+    try {
+      accountData = JSON.parse(await fs.readFile(accountPath, "utf-8"));
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Account not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    const personId = accountData.personId;
+    if (!personId) {
+      return new Response(JSON.stringify({ ok: false, error: "personId not found in account" }), {
+        status: 500,
         headers: { "Content-Type": "application/json" }
       });
     }
@@ -111,16 +123,23 @@ export const personRoutes = new Elysia()
     let personData: Record<string, any> = {};
     try {
       personData = JSON.parse(await fs.readFile(infoPath, "utf-8"));
-    } catch {
-      return new Response(JSON.stringify({ ok: false, error: "Person not found" }), {
-        status: 404,
+    } catch (e) {
+      // Let's create it if it doesn't exist.
+      // return new Response(JSON.stringify({ ok: false, error: "Person not found" }), {
+      //   status: 404,
+      //   headers: { "Content-Type": "application/json" }
+      // });
+    }
+
+    const validSettings = ['screenName', 'statusText', 'isFindable'];
+    if (validSettings.includes(name)) {
+      personData[name] = value;
+    } else {
+      return new Response(JSON.stringify({ ok: false, error: "Invalid setting name" }), {
+        status: 422,
         headers: { "Content-Type": "application/json" }
       });
     }
-
-    if (screenName) personData.screenName = screenName;
-    if (statusText !== undefined) personData.statusText = statusText;
-    if (isFindable !== undefined) personData.isFindable = isFindable;
 
     await fs.writeFile(infoPath, JSON.stringify(personData, null, 2));
 
@@ -130,10 +149,8 @@ export const personRoutes = new Elysia()
     });
   }, {
     body: t.Object({
-      personId: t.String(),
-      screenName: t.Optional(t.String()),
-      statusText: t.Optional(t.String()),
-      isFindable: t.Optional(t.Boolean())
+      name: t.String(),
+      value: t.Any()
     })
   })
 
