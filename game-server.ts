@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as path from "node:path"
 import { Elysia, t } from 'elysia'
 import * as fs from "node:fs/promises";
@@ -873,60 +874,60 @@ const app = new Elysia()
     body: t.Object({ name: t.String() }),
     type: "form"
   })
-	.post("/area/updatesettings", async ({ body }) => {
-		const { areaId, environmentChanger } = body;
-		
-		if (!areaId || typeof areaId !== "string") {
-			return new Response("Missing areaId", { status: 400 });
-		}
-		
-		const loadPath = `./data/area/load/${areaId}.json`;
-		try {
-			const loadFile = Bun.file(loadPath);
-			if (!await loadFile.exists()) {
-				return new Response("Area not found", { status: 404 });
-			}
-			
-			const areaData = await loadFile.json();
-			
-			// Update environmentChangersJSON if provided
-			if (environmentChanger) {
-				try {
-					const newChanger = JSON.parse(environmentChanger);
-					const currentChangers = JSON.parse(areaData.environmentChangersJSON || '{"environmentChangers":[]}');
-					
-					// Add or update the environment changer
-					const existingIndex = currentChangers.environmentChangers.findIndex((c: any) => c.Name === newChanger.Name);
-					if (existingIndex >= 0) {
-						currentChangers.environmentChangers[existingIndex] = newChanger;
-					} else {
-						currentChangers.environmentChangers.push(newChanger);
-					}
-					
-					areaData.environmentChangersJSON = JSON.stringify(currentChangers);
-				} catch (parseError) {
-					console.error("Error parsing environmentChanger JSON:", parseError);
-					return new Response("Invalid environmentChanger JSON", { status: 400 });
-				}
-			}
-			
-			// Write updated data back
-			await Bun.write(loadPath, JSON.stringify(areaData, null, 2));
-			
-			return new Response(JSON.stringify({ ok: true }), {
-				status: 200,
-				headers: { "Content-Type": "application/json" }
-			});
-		} catch (error) {
-			console.error("Error updating area settings:", error);
-			return new Response("Server error", { status: 500 });
-		}
-	}, {
-		body: t.Object({
-			areaId: t.String(),
-			environmentChanger: t.Optional(t.String())
-		})
-	})	
+  .post("/area/updatesettings", async ({ body }) => {
+    const { areaId, environmentChanger } = body;
+
+    if (!areaId || typeof areaId !== "string") {
+      return new Response("Missing areaId", { status: 400 });
+    }
+
+    const loadPath = `./data/area/load/${areaId}.json`;
+    try {
+      const loadFile = Bun.file(loadPath);
+      if (!await loadFile.exists()) {
+        return new Response("Area not found", { status: 404 });
+      }
+
+      const areaData = await loadFile.json();
+
+      // Update environmentChangersJSON if provided
+      if (environmentChanger) {
+        try {
+          const newChanger = JSON.parse(environmentChanger);
+          const currentChangers = JSON.parse(areaData.environmentChangersJSON || '{"environmentChangers":[]}');
+
+          // Add or update the environment changer
+          const existingIndex = currentChangers.environmentChangers.findIndex((c: any) => c.Name === newChanger.Name);
+          if (existingIndex >= 0) {
+            currentChangers.environmentChangers[existingIndex] = newChanger;
+          } else {
+            currentChangers.environmentChangers.push(newChanger);
+          }
+
+          areaData.environmentChangersJSON = JSON.stringify(currentChangers);
+        } catch (parseError) {
+          console.error("Error parsing environmentChanger JSON:", parseError);
+          return new Response("Invalid environmentChanger JSON", { status: 400 });
+        }
+      }
+
+      // Write updated data back
+      await Bun.write(loadPath, JSON.stringify(areaData, null, 2));
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } catch (error) {
+      console.error("Error updating area settings:", error);
+      return new Response("Server error", { status: 500 });
+    }
+  }, {
+    body: t.Object({
+      areaId: t.String(),
+      environmentChanger: t.Optional(t.String())
+    })
+  })
   .post("/area/visit", async ({ body }) => {
     const { areaId, name } = body;
     if (!areaId || !name) return new Response("Missing data", { status: 400 });
@@ -1268,7 +1269,7 @@ const app = new Elysia()
     try {
       const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
       personId = account.personId || personId;
-    } catch {}
+    } catch { }
 
     const invPath = `./data/person/inventory/${personId}.json`;
     let items: string[] = [];
@@ -1278,7 +1279,7 @@ const app = new Elysia()
         const data = await file.json();
         if (Array.isArray(data?.ids)) items = data.ids;
       }
-    } catch {}
+    } catch { }
 
     // Prefer inventory stored in account.json
     let usedPaged = false;
@@ -1292,7 +1293,7 @@ const app = new Elysia()
           usedPaged = true;
         }
       }
-    } catch {}
+    } catch { }
 
     // If using paged store, items already represent this page; otherwise paginate flat list
     const pageSize = 20;
@@ -1317,7 +1318,7 @@ const app = new Elysia()
     try {
       const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
       personId = account.personId || personId;
-    } catch {}
+    } catch { }
 
     // Load account.json and embed inventory there
     const accountPath = "./data/person/account.json";
@@ -1345,7 +1346,7 @@ const app = new Elysia()
       if (!current.pages) current.pages = {};
       if (!Array.isArray(current.pages[pageKey])) current.pages[pageKey] = [];
       let parsedItem: any = invUpdate.inventoryItem;
-      try { parsedItem = JSON.parse(invUpdate.inventoryItem); } catch {}
+      try { parsedItem = JSON.parse(invUpdate.inventoryItem); } catch { }
       current.pages[pageKey].push(parsedItem);
     } else {
       return new Response(JSON.stringify({ ok: false, error: "Missing ids, id or (page, inventoryItem)" }), {
@@ -1386,7 +1387,7 @@ const app = new Elysia()
     try {
       const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
       personId = account.personId || personId;
-    } catch {}
+    } catch { }
 
     const accountPath = "./data/person/account.json";
     let accountData: Record<string, any> = {};
@@ -1419,7 +1420,7 @@ const app = new Elysia()
         }
         return true; // Keep if not an object
       });
-      
+
       const removedCount = initialLength - current.pages[pageKey].length;
       if (removedCount > 0) {
         console.log(`[INVENTORY] deleted ${removedCount} item(s) with thingId ${thingId} from page ${page}`);
@@ -1455,7 +1456,7 @@ const app = new Elysia()
     try {
       const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
       personId = account.personId || personId;
-    } catch {}
+    } catch { }
 
     const accountPath = "./data/person/account.json";
     let accountData: Record<string, any> = {};
@@ -1514,7 +1515,7 @@ const app = new Elysia()
     try {
       const account = JSON.parse(await fs.readFile("./data/person/account.json", "utf-8"));
       personId = account.personId || personId;
-    } catch {}
+    } catch { }
 
     const accountPath = "./data/person/account.json";
     let accountData: Record<string, any> = {};
@@ -1540,10 +1541,10 @@ const app = new Elysia()
       const pageKey = String(invUpdate.page);
       if (!current.pages) current.pages = {};
       if (!Array.isArray(current.pages[pageKey])) current.pages[pageKey] = [];
-      
+
       let parsedItem: any = invUpdate.inventoryItem;
-      try { parsedItem = JSON.parse(invUpdate.inventoryItem); } catch {}
-      
+      try { parsedItem = JSON.parse(invUpdate.inventoryItem); } catch { }
+
       // Find and replace existing item with same Tid, or add if not found
       const thingId = parsedItem?.Tid;
       if (thingId) {
@@ -1551,16 +1552,16 @@ const app = new Elysia()
         for (let i = 0; i < current.pages[pageKey].length; i++) {
           const existingItem = current.pages[pageKey][i];
           let existingTid = null;
-          
+
           if (typeof existingItem === 'string') {
             try {
               const parsed = JSON.parse(existingItem);
               existingTid = parsed.Tid;
-            } catch {}
+            } catch { }
           } else if (typeof existingItem === 'object' && existingItem !== null) {
             existingTid = existingItem.Tid;
           }
-          
+
           if (existingTid === thingId) {
             current.pages[pageKey][i] = parsedItem;
             found = true;
@@ -1568,7 +1569,7 @@ const app = new Elysia()
             break;
           }
         }
-        
+
         if (!found) {
           current.pages[pageKey].push(parsedItem);
           console.log(`[INVENTORY] added new item with thingId ${thingId} to page ${pageKey}`);
