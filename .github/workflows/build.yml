@@ -1,0 +1,78 @@
+name: Build server binaries
+
+on:
+  push:
+    branches: [release]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            os: ubuntu-latest
+            build_script: build:linux
+          - platform: linux-arm64
+            os: ubuntu-latest
+            build_script: build:arm
+          - platform: windows-x64
+            os: windows-latest
+            build_script: build:windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: "1.1.43"
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build (${{ matrix.platform }})
+        run: bun run ${{ matrix.build_script }}
+
+      - name: Upload artifact (${{ matrix.platform }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: echoland-server-${{ matrix.platform }}
+          path: |
+            build/echoland-server*
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read version from package.json
+        id: get_version
+        run: echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: echoland-server-*
+          path: ./artifacts
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: echoland v${{ steps.get_version.outputs.version }}
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
