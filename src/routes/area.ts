@@ -88,7 +88,6 @@ export const areaRoutes = new Elysia()
         name: body.name,
         description: body.description || "",
       });
-      await Bun.write("./cache/areaIndex.json", JSON.stringify(areaIndex));
 
       return { ok: true, id: areaId };
     },
@@ -417,7 +416,7 @@ export const areaRoutes = new Elysia()
 
     const listPath = "/app/data/area/arealist.json";
     const areaList = await getDynamicAreaList();
-    const alreadyVisited = areaList.visited.some(a => a.id === areaId);
+    const alreadyVisited = areaList.visited.some((a: any) => a.id === areaId);
 
     if (!alreadyVisited) {
       areaList.visited.push({ id: areaId, name, playerCount: 0 });
