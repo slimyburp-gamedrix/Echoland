@@ -4,6 +4,7 @@ import { Elysia, t } from 'elysia'
 import * as fs from "node:fs/promises";
 import { AreaInfoSchema } from "./lib/schemas";
 import { canned_areaList, canned_friendsbystr, canned_forums_favorites } from "./src/canned-data";
+import { authRoutes } from "./src/routes/auth";
 
 const HOST = Bun.env.HOST ?? "0.0.0.0";
 const PORT_API = Number(Bun.env.PORT_API ?? 8000);
@@ -351,53 +352,7 @@ const app = new Elysia()
   })
 
 
-  .post(
-    "/auth/start",
-    async ({ cookie: { ast } }) => {
-      const account = JSON.parse(
-        await fs.readFile("./data/person/account.json", "utf-8")
-      )
-
-      ast.value = `s:${generateObjectId()}`
-      ast.httpOnly = true
-
-      return {
-        vMaj: 188,
-        vMinSrv: 1,
-        personId: account.personId,
-        homeAreaId: account.homeAreaId,
-        screenName: account.screenName,
-        statusText: `exploring around (my id: ${account.personId})`,
-        isFindable: true,
-        age: 0,
-        ageSecs: 0,
-        attachments: typeof account.attachments === "string"
-          ? account.attachments
-          : JSON.stringify(account.attachments ?? {}),
-        isSoftBanned: false,
-        showFlagWarning: false,
-        flagTags: [],
-        areaCount: 1,
-        thingTagCount: 1,
-        allThingsClonable: true,
-        achievements: [],
-        isEditorHere: true,
-        isListEditorHere: true,
-        isOwnerHere: true,
-        hasEditTools: true,
-        hasEditToolsPermanently: true,
-        editToolsExpiryDate: null,
-        isInEditToolsTrial: false,
-        wasEditToolsTrialEverActivated: false,
-        customSearchWords: ""
-      }
-    },
-    {
-      cookie: t.Object({
-        ast: t.Optional(t.String())
-      })
-    }
-  )
+  .use(authRoutes)
   // Save avatar body attachments to account.json
   .post("/person/updateattachment", async ({ body }) => {
     const { id, data, attachments } = body as any;
