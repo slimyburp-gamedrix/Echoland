@@ -37,15 +37,54 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Read version from package.json
+        id: get_version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            core.setOutput('version', pkg.version);
+
       - name: Build (${{ matrix.platform }})
         run: bun run ${{ matrix.build_script }}
+
+      - name: Rename binaries with version (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.get_version.outputs.version }}"
+          shopt -s nullglob
+          for f in build/echoland-server*; do
+            # Insert version before extension if present
+            filename="$(basename "$f")"
+            if [[ "$filename" == *.* ]]; then
+              base="${f%.*}"
+              ext=".${filename##*.}"
+            else
+              base="$f"
+              ext=""
+            fi
+            mv "$f" "${base}-v${VERSION}${ext}"
+          done
+
+      - name: Rename binaries with version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = '${{ steps.get_version.outputs.version }}'
+          Get-ChildItem build/echoland-server* | ForEach-Object {
+            $newName = "$($_.BaseName)-v$VERSION$($_.Extension)"
+            Rename-Item -Path $_.FullName -NewName $newName
+          }
 
       - name: Upload artifact (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
         with:
-          name: echoland-server-${{ matrix.platform }}
+          name: echoland-server-${{ matrix.platform }}-v${{ steps.get_version.outputs.version }}
           path: |
-            build/echoland-server*
+            build/echoland-server*-v${{ steps.get_version.outputs.version }}*
 
   release:
     name: Create GitHub Release
@@ -64,7 +103,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: echoland-server-*
+          pattern: echoland-server-*-v*
           path: ./artifacts
 
       - name: Create release and upload assets
