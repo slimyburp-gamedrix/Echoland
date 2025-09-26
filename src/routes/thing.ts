@@ -399,3 +399,24 @@ export const thingRoutes = new Elysia()
     ({ }) => ({ isFlagged: false }),
     { body: t.Object({ id: t.String() }) }
   )
+  .post("/thing/topby", async ({ body: { id, limit } }) => {
+    const file = Bun.file(`./data/person/topby/${id}.json`);
+
+    if (await file.exists()) {
+      const data = await file.json();
+      return new Response(JSON.stringify({ ids: data.ids.slice(0, limit || 4) }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    } else {
+      return new Response(JSON.stringify({ ids: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+  }, {
+    body: t.Object({
+      id: t.String(),
+      limit: t.Optional(t.Numeric())
+    })
+  })
