@@ -1,0 +1,117 @@
+name: Build server binaries
+
+on:
+  push:
+    branches: [release]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            os: ubuntu-latest
+            build_script: build:linux
+          - platform: linux-arm64
+            os: ubuntu-latest
+            build_script: build:arm
+          - platform: windows-x64
+            os: windows-latest
+            build_script: build:windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: "1.1.43"
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Read version from package.json
+        id: get_version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            core.setOutput('version', pkg.version);
+
+      - name: Build (${{ matrix.platform }})
+        run: bun run ${{ matrix.build_script }}
+
+      - name: Rename binaries with version (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.get_version.outputs.version }}"
+          shopt -s nullglob
+          for f in build/echoland-server*; do
+            # Insert version before extension if present
+            filename="$(basename "$f")"
+            if [[ "$filename" == *.* ]]; then
+              base="${f%.*}"
+              ext=".${filename##*.}"
+            else
+              base="$f"
+              ext=""
+            fi
+            mv "$f" "${base}-v${VERSION}${ext}"
+          done
+
+      - name: Rename binaries with version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = '${{ steps.get_version.outputs.version }}'
+          Get-ChildItem build/echoland-server* | ForEach-Object {
+            $newName = "$($_.BaseName)-v$VERSION$($_.Extension)"
+            Rename-Item -Path $_.FullName -NewName $newName
+          }
+
+      - name: Upload artifact (${{ matrix.platform }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: echoland-server-${{ matrix.platform }}-v${{ steps.get_version.outputs.version }}
+          path: |
+            build/echoland-server*-v${{ steps.get_version.outputs.version }}*
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read version from package.json
+        id: get_version
+        run: echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: echoland-server-*-v*
+          path: ./artifacts
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: echoland v${{ steps.get_version.outputs.version }}
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
