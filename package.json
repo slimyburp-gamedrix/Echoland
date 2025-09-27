@@ -1,6 +1,6 @@
 {
   "name": "echoland",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A single player server for the defunct VR creation platform Anyland",
   "main": "game-server.ts",
   "scripts": {
