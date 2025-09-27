@@ -76,8 +76,12 @@ export const personRoutes = new Elysia()
   .get("person/friendsbystr",
     () => canned_friendsbystr
   )
-
-
+  .post("person/requestwelcome", () => {
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    })
+  })
   .post("person/info",
     async ({ body: { areaId, userId } }) => {
       const file = Bun.file(path.resolve("./data/person/info/", userId + ".json"))

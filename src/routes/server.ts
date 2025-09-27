@@ -57,5 +57,12 @@ export const serverRoutes = new Elysia()
     ({ body: { userId } }) => Bun.file(path.resolve("./data/person/gift/", userId + ".json")),
     { body: t.Object({ userId: t.String() }) }
   )
-
-
+  .post("/extras/startedittoolstrial", () => {
+    return new Response(JSON.stringify({
+      ok: true,
+      expiryDate: "3000-04-19T00:07:37.782Z"
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    })
+  })
