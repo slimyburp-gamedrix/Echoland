@@ -104,7 +104,7 @@ Place the images folder inside the main Echoland directory.
 
 ### 3. Download Archive Data
 
-[Archive Data Release](https://github.com/Echoland-AL/echoland/releases/tag/archive-data)
+[Archive Data Release](https://drive.google.com/file/d/1NlgpQFts0i27r7EXdemYO_TdEKg7bRpc/view?usp=drive_link)
 
 Extract the `data.zip` contents into your Echoland server folder named as "data"
 
